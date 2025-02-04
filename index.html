@@ -39,87 +39,18 @@
 <script type="text/babel">
 	const { useState } = React;
 
-	// Main component
-	function SchemaPlanner() {
+	const SchemaPlanner = () => {
 		const [ fields, setFields ]             = useState( [
 			{ name: '', type: 'string', required: false, defaultValue: '', description: '' }
 		] );
 		const [ outputFormat, setOutputFormat ] = useState( 'typescript' );
-		const [ sqlFormat, setSqlFormat ]       = useState( 'jsonb' );
+		const [ sqlFormat, setSqlFormat ]       = useState( 'jsonb' ); // 'jsonb' or 'flat'
 		const [ jsonInput, setJsonInput ]       = useState( '' );
 		const [ error, setError ]               = useState( '' );
 
-		// Basic types available in all formats
-		const commonTypes = [
+		const types = [
 			'string', 'number', 'boolean', 'date', 'array', 'object'
 		];
-
-		// SQL-specific types
-		const sqlTypes = [
-			'VARCHAR', 'TEXT', 'LONGTEXT', 'CHAR',
-			'INT', 'BIGINT', 'SMALLINT', 'TINYINT',
-			'DECIMAL', 'FLOAT', 'DOUBLE',
-			'BOOLEAN',
-			'DATE', 'DATETIME', 'TIMESTAMP', 'TIME',
-			'JSON', 'JSONB',
-			'BLOB', 'LONGBLOB',
-			'UUID',
-			'ENUM'
-		];
-
-		// Type mappings for different output formats
-		const typeMap = {
-			sql:        {
-				string:  'VARCHAR(255)',
-				number:  'INT',
-				boolean: 'BOOLEAN',
-				date:    'TIMESTAMP',
-				array:   'JSONB',
-				object:  'JSONB',
-				// SQL-specific mappings
-				'VARCHAR':  'VARCHAR(255)',
-				'TEXT':     'TEXT',
-				'LONGTEXT': 'LONGTEXT',
-				'CHAR':     'CHAR(1)',
-				'INT':      'INT',
-				'BIGINT':   'BIGINT',
-				'SMALLINT': 'SMALLINT',
-				'TINYINT':  'TINYINT',
-				'DECIMAL':  'DECIMAL(10,2)',
-				'FLOAT':    'FLOAT',
-				'DOUBLE':   'DOUBLE',
-				'DATETIME': 'DATETIME',
-				'TIME':     'TIME',
-				'JSON':     'JSON',
-				'JSONB':    'JSONB',
-				'BLOB':     'BLOB',
-				'LONGBLOB': 'LONGBLOB',
-				'UUID':     'UUID',
-				'ENUM':     'ENUM'
-			},
-			typescript: {
-				// TypeScript mappings
-				'VARCHAR':  'string',
-				'TEXT':     'string',
-				'LONGTEXT': 'string',
-				'CHAR':     'string',
-				'INT':      'number',
-				'BIGINT':   'bigint',
-				'SMALLINT': 'number',
-				'TINYINT':  'number',
-				'DECIMAL':  'number',
-				'FLOAT':    'number',
-				'DOUBLE':   'number',
-				'DATETIME': 'Date',
-				'TIME':     'string',
-				'JSON':     'any',
-				'JSONB':    'any',
-				'BLOB':     'Blob',
-				'LONGBLOB': 'Blob',
-				'UUID':     'string',
-				'ENUM':     'string'
-			}
-		};
 
 		const handleFieldNameKeyDown = ( event, index ) => {
 			if ( event.key === 'Enter' ) {
@@ -132,12 +63,76 @@
 					description:  ''
 				} ];
 				setFields( newFields );
+				// Use setTimeout to ensure the new field is rendered
 				setTimeout( () => {
 					const newFieldInput = document.querySelector( `#field-name-${index + 1}` );
 					if ( newFieldInput ) {
 						newFieldInput.focus();
 					}
 				}, 0 );
+			}
+		};
+
+		const inferType = ( value ) => {
+			if ( Array.isArray( value ) ) return 'array';
+			if ( value instanceof Date ) return 'date';
+			if ( value === null ) return 'string';
+			return typeof value;
+		};
+
+		const extractFields = ( obj, parentKey = '' ) => {
+			const extractedFields = [];
+
+			Object.entries( obj ).forEach( ( [ key, value ] ) => {
+				const fullKey = parentKey ? `${parentKey}.${key}` : key;
+				const type    = inferType( value );
+
+				if ( type === 'object' && value !== null ) {
+					extractedFields.push( ...extractFields( value, fullKey ) );
+				} else {
+					extractedFields.push( {
+						name:         fullKey,
+						type:         type,
+						required:     true,
+						defaultValue: value !== null ? String( value ) : '',
+						description:  ''
+					} );
+				}
+			} );
+
+			return extractedFields;
+		};
+
+		const parseJsonSchema = ( schema ) => {
+			const extractedFields = [];
+
+			if ( schema.properties ) {
+				Object.entries( schema.properties ).forEach( ( [ key, prop ] ) => {
+					extractedFields.push( {
+						name:         key,
+						type:         prop.type || 'string',
+						required:     schema.required && schema.required.includes( key ) || false,
+						defaultValue: prop.default ? String( prop.default ) : '',
+						description:  prop.description || ''
+					} );
+				} );
+			}
+
+			return extractedFields;
+		};
+
+		const reverseEngineer = () => {
+			try {
+				setError( '' );
+				const parsed = JSON.parse( jsonInput );
+
+				if ( parsed.type === 'object' && parsed.properties ) {
+					setFields( parseJsonSchema( parsed ) );
+				} else {
+					setFields( extractFields( parsed ) );
+				}
+			} catch ( e ) {
+				setError( 'Invalid JSON input. Please check your syntax.' );
 			}
 		};
 
@@ -172,8 +167,7 @@
 			fields.forEach( field => {
 				if ( field.name ) {
 					const optional = field.required ? '' : '?';
-					const tsType   = typeMap.typescript[ field.type ] || field.type;
-					output += `  ${field.name}${optional}: ${tsType};\n`;
+					output += `  ${field.name}${optional}: ${field.type};\n`;
 				}
 			} );
 			output += '}';
@@ -206,14 +200,26 @@
 		};
 
 		const generateSQL = () => {
+			const typeMapping = {
+				string:  'VARCHAR(255)',
+				number:  'NUMERIC',
+				boolean: 'BOOLEAN',
+				date:    'TIMESTAMP',
+				array:   'JSONB',
+				object:  'JSONB'
+			};
+
 			if ( sqlFormat === 'jsonb' ) {
+				// Group fields by their parent object
 				const groupedFields = fields.reduce( ( acc, field ) => {
 					if ( !field.name ) return acc;
 
 					const parts = field.name.split( '.' );
 					if ( parts.length === 1 ) {
+						// Top-level field
 						acc.root.push( field );
 					} else {
+						// Nested field
 						const parentPath = parts[ 0 ];
 						if ( !acc.nested[ parentPath ] ) {
 							acc.nested[ parentPath ] = [];
@@ -228,21 +234,20 @@
 
 				let output = 'CREATE TABLE schema_table (\n';
 
-				groupedFields.root.forEach( ( field ) => {
-					if ( field.name ) {
-						const sqlType = typeMap.sql[ field.type ] || 'VARCHAR(255)';
-						output += `  ${field.name} ${sqlType}`;
-						if ( field.required ) output += ' NOT NULL';
-						if ( field.defaultValue ) {
-							const defaultVal = field.type === 'string' || field.type === 'VARCHAR' || field.type === 'TEXT'
-											   ? `'${field.defaultValue}'`
-											   : field.defaultValue;
-							output += ` DEFAULT ${defaultVal}`;
-						}
-						output += ',\n';
+				// Add root-level fields
+				groupedFields.root.forEach( ( field, index ) => {
+					output += `  ${field.name} ${typeMapping[ field.type ]}`;
+					if ( field.required ) output += ' NOT NULL';
+					if ( field.defaultValue ) {
+						const defaultVal = field.type === 'string'
+										   ? `'${field.defaultValue}'`
+										   : field.defaultValue;
+						output += ` DEFAULT ${defaultVal}`;
 					}
+					output += ',\n';
 				} );
 
+				// Add nested objects as JSONB
 				Object.entries( groupedFields.nested ).forEach( ( [ parent, fields ], index ) => {
 					output += `  ${parent} JSONB`;
 					if ( fields.some( f => f.required ) ) output += ' NOT NULL';
@@ -268,7 +273,7 @@
 						output += ` DEFAULT '${JSON.stringify( defaultValues )}'::jsonb`;
 					}
 
-					if ( index < Object.keys( groupedFields.nested ).length - 1 ) {
+					if ( index < Object.keys( groupedFields.nested ).length - 1 || groupedFields.root.length > 0 ) {
 						output += ',\n';
 					} else {
 						output += '\n';
@@ -278,15 +283,16 @@
 				output += ');';
 				return output;
 			} else {
+				// Flat format with underscores
 				let output = 'CREATE TABLE schema_table (\n';
 				fields.forEach( ( field, index ) => {
 					if ( field.name ) {
+						// Replace dots with underscores
 						const flatName = field.name.replace( /\./g, '_' );
-						const sqlType  = typeMap.sql[ field.type ] || 'VARCHAR(255)';
-						output += `  ${flatName} ${sqlType}`;
+						output += `  ${flatName} ${typeMapping[ field.type ]}`;
 						if ( field.required ) output += ' NOT NULL';
 						if ( field.defaultValue ) {
-							const defaultVal = field.type === 'string' || field.type === 'VARCHAR' || field.type === 'TEXT'
+							const defaultVal = field.type === 'string'
 											   ? `'${field.defaultValue}'`
 											   : field.defaultValue;
 							output += ` DEFAULT ${defaultVal}`;
@@ -318,6 +324,30 @@
 						<div className="col-12 col-xl-10">
 							<div className="card mb-4">
 								<div className="card-header">
+									<h5 className="card-title mb-0">Reverse Engineer Schema</h5>
+								</div>
+								<div className="card-body">
+                                    <textarea
+											className="form-control mono mb-3"
+											rows="5"
+											placeholder="Paste JSON or JSON Schema here..."
+											value={jsonInput}
+											onChange={( e ) => setJsonInput( e.target.value )}
+									/>
+									{error && (
+											<div className="alert alert-danger">{error}</div>
+									)}
+									<button
+											className="btn btn-primary"
+											onClick={reverseEngineer}
+									>
+										Generate Fields
+									</button>
+								</div>
+							</div>
+
+							<div className="card mb-4">
+								<div className="card-header">
 									<h5 className="card-title mb-0">Schema Fields</h5>
 								</div>
 								<div className="card-body">
@@ -340,7 +370,7 @@
 															value={field.type}
 															onChange={( e ) => updateField( index, 'type', e.target.value )}
 													>
-														{( outputFormat === 'sql' ? sqlTypes : commonTypes ).map( type => (
+														{types.map( type => (
 																<option key={type} value={type}>{type}</option>
 														) )}
 													</select>
@@ -434,7 +464,7 @@
 					</div>
 				</div>
 		);
-	}
+	};
 
 	// Render the app
 	const root = ReactDOM.createRoot( document.getElementById( 'root' ) );
