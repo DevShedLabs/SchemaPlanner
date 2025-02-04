@@ -7,6 +7,9 @@
 
 	<!-- Bootstrap CSS -->
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+	<!-- Add Font Awesome CSS in the head of your HTML -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
 
 	<!-- React and Dependencies -->
 	<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -31,10 +34,94 @@
 		.mono {
 			font-family: monospace;
 		}
+
+		.nav-scroller {
+			position:   relative;
+			z-index:    2;
+			height:     2.75rem;
+			overflow-y: hidden;
+		}
+
+		.nav-scroller .nav {
+			display:                    flex;
+			flex-wrap:                  nowrap;
+			padding-bottom:             1rem;
+			margin-top:                 -1px;
+			overflow-x:                 auto;
+			text-align:                 center;
+			white-space:                nowrap;
+			-webkit-overflow-scrolling: touch;
+		}
+
+
+		main > .container {
+			padding: 60px 15px 0;
+		}
+
+		footer {
+			background: #fff;
+		}
+
+		footer a {
+			color: #000;
+		}
+
+		footer .social-icons a {
+			text-decoration: none;
+		}
 	</style>
 </head>
 <body>
-<div id="root"></div>
+<header>
+	<!-- Fixed navbar -->
+	<nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+		<div class="container-fluid">
+			<a class="navbar-brand" href="./">Schema Planner</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="navbarCollapse">
+				<ul class="navbar-nav me-auto mb-2 mb-md-0">
+					<li class="nav-item">
+						<!--<a class="nav-link active" aria-current="page" href="./">Home</a>-->
+					</li>
+				</ul>
+				<div class="d-flex" role="search">
+					<a href="https://devshed.io" class="btn btn-outline-success" target="_blank">Signup for DevShed</a>
+				</div>
+			</div>
+		</div>
+	</nav>
+</header>
+<main>
+	<div class="container">
+		<div id="root"></div>
+	</div>
+</main>
+<footer class="footer fixed-bottom mt-auto py-3">
+	<div class="container">
+		<div class="row justify-content-center">
+			<div class="col-6 col-xl-5">
+				<div>
+					<span class="text-muted">Made with ♥ by <a target="_blank" href="https://devshed.io">DevShed.io</a> and <a target="_blank" href="https://jeffbehnke.com">Jeffrey Behnke</a></span>
+				</div>
+			</div>
+			<div class="col-6 col-xl-5">
+				<div class="social-icons d-flex justify-content-end">
+					<a title="Jeffrey Behnke on Twitter" href="https://twitter.com/jeff_behnke_" target="_blank" class="me-3">
+						<i class="fa-brands fa-x-twitter fa-lg"></i>
+					</a>
+					<a title="DevShed.io on Twitter" href="https://twitter.com/devshedio" target="_blank" class="me-3">
+						<i class="fa-brands fa-square-x-twitter fa-lg"></i>
+					</a>
+					<a href="https://github.com/devshedlabs" target="_blank" class="">
+						<i class="fab fa-github fa-lg"></i>
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</footer>
 
 <script type="text/babel">
 	const { useState } = React;
@@ -51,6 +138,79 @@
 		const types = [
 			'string', 'number', 'boolean', 'date', 'array', 'object'
 		];
+
+		// Basic types available in all formats
+		const commonTypes = [
+			'string', 'number', 'boolean', 'date', 'array', 'object'
+		];
+
+		// SQL-specific types
+		const sqlTypes = [
+			'VARCHAR', 'TEXT', 'LONGTEXT', 'CHAR',
+			'INT', 'BIGINT', 'SMALLINT', 'TINYINT',
+			'DECIMAL', 'FLOAT', 'DOUBLE',
+			'BOOLEAN',
+			'DATE', 'DATETIME', 'TIMESTAMP', 'TIME',
+			'JSON', 'JSONB',
+			'BLOB', 'LONGBLOB',
+			'UUID',
+			'ENUM'
+		];
+
+		// Type mappings for different output formats
+		const typeMap = {
+			sql:        {
+				string:  'VARCHAR(255)',
+				number:  'INT',
+				boolean: 'BOOLEAN',
+				date:    'TIMESTAMP',
+				array:   'JSONB',
+				object:  'JSONB',
+				// SQL-specific mappings
+				'VARCHAR':  'VARCHAR(255)',
+				'TEXT':     'TEXT',
+				'LONGTEXT': 'LONGTEXT',
+				'CHAR':     'CHAR(1)',
+				'INT':      'INT',
+				'BIGINT':   'BIGINT',
+				'SMALLINT': 'SMALLINT',
+				'TINYINT':  'TINYINT',
+				'DECIMAL':  'DECIMAL(10,2)',
+				'FLOAT':    'FLOAT',
+				'DOUBLE':   'DOUBLE',
+				'DATETIME': 'DATETIME',
+				'TIME':     'TIME',
+				'JSON':     'JSON',
+				'JSONB':    'JSONB',
+				'BLOB':     'BLOB',
+				'LONGBLOB': 'LONGBLOB',
+				'UUID':     'UUID',
+				'ENUM':     'ENUM'
+			},
+			typescript: {
+				// TypeScript mappings
+				'VARCHAR':  'string',
+				'TEXT':     'string',
+				'LONGTEXT': 'string',
+				'CHAR':     'string',
+				'INT':      'number',
+				'BIGINT':   'bigint',
+				'SMALLINT': 'number',
+				'TINYINT':  'number',
+				'DECIMAL':  'number',
+				'FLOAT':    'number',
+				'DOUBLE':   'number',
+				'DATETIME': 'Date',
+				'TIME':     'string',
+				'JSON':     'any',
+				'JSONB':    'any',
+				'BLOB':     'Blob',
+				'LONGBLOB': 'Blob',
+				'UUID':     'string',
+				'ENUM':     'string'
+			}
+		};
+
 
 		const handleFieldNameKeyDown = ( event, index ) => {
 			if ( event.key === 'Enter' ) {
@@ -167,7 +327,8 @@
 			fields.forEach( field => {
 				if ( field.name ) {
 					const optional = field.required ? '' : '?';
-					output += `  ${field.name}${optional}: ${field.type};\n`;
+					const tsType   = typeMap.typescript[ field.type ] || field.type;
+					output += `  ${field.name}${optional}: ${tsType};\n`;
 				}
 			} );
 			output += '}';
@@ -199,27 +360,16 @@
 			return JSON.stringify( schema, null, 2 );
 		};
 
-		const generateSQL = () => {
-			const typeMapping = {
-				string:  'VARCHAR(255)',
-				number:  'NUMERIC',
-				boolean: 'BOOLEAN',
-				date:    'TIMESTAMP',
-				array:   'JSONB',
-				object:  'JSONB'
-			};
 
+		const generateSQL = () => {
 			if ( sqlFormat === 'jsonb' ) {
-				// Group fields by their parent object
 				const groupedFields = fields.reduce( ( acc, field ) => {
 					if ( !field.name ) return acc;
 
 					const parts = field.name.split( '.' );
 					if ( parts.length === 1 ) {
-						// Top-level field
 						acc.root.push( field );
 					} else {
-						// Nested field
 						const parentPath = parts[ 0 ];
 						if ( !acc.nested[ parentPath ] ) {
 							acc.nested[ parentPath ] = [];
@@ -234,20 +384,21 @@
 
 				let output = 'CREATE TABLE schema_table (\n';
 
-				// Add root-level fields
-				groupedFields.root.forEach( ( field, index ) => {
-					output += `  ${field.name} ${typeMapping[ field.type ]}`;
-					if ( field.required ) output += ' NOT NULL';
-					if ( field.defaultValue ) {
-						const defaultVal = field.type === 'string'
-										   ? `'${field.defaultValue}'`
-										   : field.defaultValue;
-						output += ` DEFAULT ${defaultVal}`;
+				groupedFields.root.forEach( ( field ) => {
+					if ( field.name ) {
+						const sqlType = typeMap.sql[ field.type ] || 'VARCHAR(255)';
+						output += `  ${field.name} ${sqlType}`;
+						if ( field.required ) output += ' NOT NULL';
+						if ( field.defaultValue ) {
+							const defaultVal = field.type === 'string' || field.type === 'VARCHAR' || field.type === 'TEXT'
+											   ? `'${field.defaultValue}'`
+											   : field.defaultValue;
+							output += ` DEFAULT ${defaultVal}`;
+						}
+						output += ',\n';
 					}
-					output += ',\n';
 				} );
 
-				// Add nested objects as JSONB
 				Object.entries( groupedFields.nested ).forEach( ( [ parent, fields ], index ) => {
 					output += `  ${parent} JSONB`;
 					if ( fields.some( f => f.required ) ) output += ' NOT NULL';
@@ -273,7 +424,7 @@
 						output += ` DEFAULT '${JSON.stringify( defaultValues )}'::jsonb`;
 					}
 
-					if ( index < Object.keys( groupedFields.nested ).length - 1 || groupedFields.root.length > 0 ) {
+					if ( index < Object.keys( groupedFields.nested ).length - 1 ) {
 						output += ',\n';
 					} else {
 						output += '\n';
@@ -283,16 +434,15 @@
 				output += ');';
 				return output;
 			} else {
-				// Flat format with underscores
 				let output = 'CREATE TABLE schema_table (\n';
 				fields.forEach( ( field, index ) => {
 					if ( field.name ) {
-						// Replace dots with underscores
 						const flatName = field.name.replace( /\./g, '_' );
-						output += `  ${flatName} ${typeMapping[ field.type ]}`;
+						const sqlType  = typeMap.sql[ field.type ] || 'VARCHAR(255)';
+						output += `  ${flatName} ${sqlType}`;
 						if ( field.required ) output += ' NOT NULL';
 						if ( field.defaultValue ) {
-							const defaultVal = field.type === 'string'
+							const defaultVal = field.type === 'string' || field.type === 'VARCHAR' || field.type === 'TEXT'
 											   ? `'${field.defaultValue}'`
 											   : field.defaultValue;
 							output += ` DEFAULT ${defaultVal}`;
