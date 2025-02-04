@@ -24,28 +24,6 @@ A modern web-based tool for designing, visualizing, and converting between diffe
     - SQL CREATE TABLE statements
     - More formats coming soon...
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v18 or higher)
-- npm or yarn
-
-### Installation
-
-```bash
-# Clone the repository
-git clone git@github.com:DevShedLabs/SchemaPlanner.git
-
-# Navigate to project directory
-cd SchemaPlanner
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-```
 
 ### Usage
 
@@ -64,29 +42,12 @@ npm run dev
     - Select desired output format from the dropdown
     - Copy the generated code from the output panel
 
-## Development
-
-### Project Structure
-
-```
-SchemaPlanner/
-├── src/
-│   ├── components/
-│   │   ├── SchemaPlanner/
-│   │   └── ui/
-│   ├── lib/
-│   └── app/
-├── public/
-└── ...
-```
 
 ### Technologies Used
 
 - React
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Lucide Icons
+- Bootstrap
+- Babel
 
 ### Contributing
 
@@ -100,20 +61,12 @@ SchemaPlanner/
 
 - [ ] Additional output formats (Mongoose, Prisma, etc.)
 - [ ] Schema validation rules
-- [ ] Import from database connection
 - [ ] Schema version control
-- [ ] Team collaboration features
 - [ ] Custom type definitions
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Inspired by the need for better schema design tools in modern web development
-- Built with love by DevShedLabs
-- Special thanks to all contributors and the open-source community
 
 ## Support
 
